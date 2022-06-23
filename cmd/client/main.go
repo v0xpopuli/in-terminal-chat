@@ -19,14 +19,12 @@ func main() {
 	flag.Parse()
 
 	if strings.TrimSpace(*name) == "" {
-		logrus.Error("Name field can't be empty")
+		logrus.Error(color.InRed("Name field can't be empty"))
 		os.Exit(1)
 	}
 
-	url := *address + "/start?name=" + *name
-	conn, _, err := websocket.DefaultDialer.Dial(url, nil)
+	conn, _, err := websocket.DefaultDialer.Dial(makeDialURL(address, name), nil)
 	if err != nil {
-
 		logrus.WithError(err).Error("Failed to establish connection with server")
 		os.Exit(1)
 	}
@@ -35,22 +33,17 @@ func main() {
 	writer.Start()
 	defer writer.Stop()
 
-	go func() {
-		for {
-			_, m, err := conn.ReadMessage()
-			if err != nil {
-				logrus.WithError(err).Error("Failed to read message")
-			}
-			if strings.Contains(string(m), *name) {
-				fmt.Fprintln(writer, color.InCyan(string(m)))
-				writer.Flush()
-			} else {
-				fmt.Println(color.InYellow(string(m)))
-			}
-		}
-	}()
+	go readMessages(writer, conn, *name)
 
-	fmt.Fprint(writer, color.InGreen("You are successfully connected!\n\n"))
+	writeMessage(writer, conn)
+}
+
+func makeDialURL(address *string, name *string) string {
+	return *address + "/start?name=" + *name
+}
+
+func writeMessage(w *uilive.Writer, c *websocket.Conn) {
+	fmt.Fprint(w, color.InGreen("You are successfully connected!\n\n"))
 	scanner := bufio.NewScanner(os.Stdin)
 	for scanner.Scan() {
 		message := scanner.Text()
@@ -58,10 +51,24 @@ func main() {
 			continue
 		}
 
-		conn.WriteMessage(websocket.TextMessage, []byte(scanner.Text()))
-		if err != nil {
+		if err := c.WriteMessage(websocket.TextMessage, []byte(scanner.Text())); err != nil {
 			logrus.WithError(err).Error("Failed to send message")
 			break
+		}
+	}
+}
+
+func readMessages(w *uilive.Writer, c *websocket.Conn, name string) {
+	for {
+		_, m, err := c.ReadMessage()
+		if err != nil {
+			logrus.WithError(err).Error("Failed to read message")
+		}
+		if strings.Contains(string(m), name) {
+			fmt.Fprintln(w, color.InCyan(string(m)))
+			w.Flush()
+		} else {
+			fmt.Println(color.InYellow(string(m)))
 		}
 	}
 }
