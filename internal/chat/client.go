@@ -1,53 +1,40 @@
 package chat
 
 import (
-	"bytes"
-	"log"
-
 	"github.com/gorilla/websocket"
-)
-
-var (
-	newline = []byte{'\n'}
-	space   = []byte{' '}
+	"github.com/sirupsen/logrus"
 )
 
 type (
-	Data struct {
-		Name    string `json:"name"`
-		Message string `json:"message"`
-	}
-
 	Client interface {
 		Publish()
 		Listen()
 
-		Buffer() chan []byte
+		Buffer() chan Message
 	}
 
 	client struct {
 		name                string
 		conn                *websocket.Conn
-		buffer, broadcaster chan []byte
+		buffer, broadcaster chan Message
 		notifyExit          chan struct{}
 	}
 )
 
-func NewClient(name string, conn *websocket.Conn, notifyExit chan struct{}, broadcaster chan []byte) Client {
-	return client{name: name, conn: conn, notifyExit: notifyExit, broadcaster: broadcaster, buffer: make(chan []byte)}
+func NewClient(name string, conn *websocket.Conn, notifyExit chan struct{}, broadcaster chan Message) Client {
+	return client{name: name, conn: conn, notifyExit: notifyExit, broadcaster: broadcaster, buffer: make(chan Message)}
 }
 
 func (c client) Publish() {
 	for {
-		_, message, err := c.conn.ReadMessage()
-		if err != nil {
+		var message Message
+		if err := c.conn.ReadJSON(&message); err != nil {
 			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
-				log.Printf("error: %v", err)
+				logrus.WithError(err).Error("Websocket unexpectedly closed")
 			}
 			break
 		}
-		message = bytes.TrimSpace(bytes.Replace(message, newline, space, -1))
-		c.broadcaster <- c.prependName(message)
+		c.broadcaster <- message
 	}
 	c.conn.Close()
 	c.notifyExit <- struct{}{}
@@ -59,15 +46,12 @@ func (c client) Listen() {
 		case message, ok := <-c.buffer:
 			if !ok {
 				c.conn.WriteMessage(websocket.CloseMessage, []byte{})
+				logrus.Warn("Attempt to read from closed channel")
 				return
 			}
 
-			w, err := c.conn.NextWriter(websocket.TextMessage)
-			if err != nil {
-				return
-			}
-			w.Write(message)
-			if err := w.Close(); err != nil {
+			if err := c.conn.WriteJSON(message); err != nil {
+				logrus.WithError(err).Error("Error occurred during attempt to send message")
 				return
 			}
 		}
@@ -75,10 +59,6 @@ func (c client) Listen() {
 	c.conn.Close()
 }
 
-func (c client) Buffer() chan []byte {
+func (c client) Buffer() chan Message {
 	return c.buffer
-}
-
-func (c client) prependName(message []byte) []byte {
-	return []byte(c.name + ": " + string(message))
 }

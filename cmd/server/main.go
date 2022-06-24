@@ -10,7 +10,12 @@ import (
 
 func main() {
 	address := flag.String("address", "localhost:8080", "http service address")
+	debug := flag.Bool("debug", true, "debug mode")
 	flag.Parse()
+
+	if *debug {
+		logrus.SetLevel(logrus.DebugLevel)
+	}
 
 	hub := chat.NewHub()
 	go hub.Run()

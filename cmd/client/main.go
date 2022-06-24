@@ -4,14 +4,17 @@ import (
 	"bufio"
 	"flag"
 	"fmt"
+	"in-terminal-chat/internal/chat"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/TwiN/go-color"
 	"github.com/gorilla/websocket"
 	"github.com/gosuri/uilive"
-	"github.com/sirupsen/logrus"
 )
+
+const messagePattern = "[%s] %s -> %s"
 
 func main() {
 	address := flag.String("address", "ws://localhost:8080", "http service address")
@@ -19,31 +22,23 @@ func main() {
 	flag.Parse()
 
 	if strings.TrimSpace(*name) == "" {
-		logrus.Error(color.InRed("Name field can't be empty"))
+		fmt.Println(color.InRed("Name arg can't be empty"))
 		os.Exit(1)
 	}
 
 	conn, _, err := websocket.DefaultDialer.Dial(makeDialURL(address, name), nil)
 	if err != nil {
-		logrus.WithError(err).Error("Failed to establish connection with server")
+		fmt.Printf("Failed to establish connection with server: %v\n", err)
 		os.Exit(1)
 	}
 
-	writer := uilive.New()
-	writer.Start()
-	defer writer.Stop()
+	fmt.Printf(color.InGreen("You are successfully connected!\n\n"))
+	go readMessages(conn, *name)
 
-	go readMessages(writer, conn, *name)
-
-	writeMessage(writer, conn)
+	writeMessage(conn, *name)
 }
 
-func makeDialURL(address *string, name *string) string {
-	return *address + "/start?name=" + *name
-}
-
-func writeMessage(w *uilive.Writer, c *websocket.Conn) {
-	fmt.Fprint(w, color.InGreen("You are successfully connected!\n\n"))
+func writeMessage(c *websocket.Conn, name string) {
 	scanner := bufio.NewScanner(os.Stdin)
 	for scanner.Scan() {
 		message := scanner.Text()
@@ -51,24 +46,36 @@ func writeMessage(w *uilive.Writer, c *websocket.Conn) {
 			continue
 		}
 
-		if err := c.WriteMessage(websocket.TextMessage, []byte(scanner.Text())); err != nil {
-			logrus.WithError(err).Error("Failed to send message")
+		if err := c.WriteJSON(chat.BuildMessage(name, message)); err != nil {
+			fmt.Printf("Failed to send message: %v\n", err)
 			break
 		}
 	}
 }
 
-func readMessages(w *uilive.Writer, c *websocket.Conn, name string) {
+func readMessages(c *websocket.Conn, name string) {
+	writer := uilive.New()
+	writer.Start()
+	defer writer.Stop()
+
 	for {
-		_, m, err := c.ReadMessage()
-		if err != nil {
-			logrus.WithError(err).Error("Failed to read message")
+		var message chat.Message
+		if err := c.ReadJSON(&message); err != nil {
+			fmt.Printf("Failed to read message: %v\n", err)
 		}
-		if strings.Contains(string(m), name) {
-			fmt.Fprintln(w, color.InCyan(string(m)))
-			w.Flush()
+
+		if message.Owner == name {
+			fmt.Fprintln(writer, color.InCyan(assembleMessage(message)))
 		} else {
-			fmt.Println(color.InYellow(string(m)))
+			fmt.Println(color.InYellow(assembleMessage(message)))
 		}
 	}
+}
+
+func assembleMessage(m chat.Message) string {
+	return fmt.Sprintf(messagePattern, time.Unix(m.UnixTimestamp, 0), m.Owner, m.Text)
+}
+
+func makeDialURL(address *string, name *string) string {
+	return *address + "/start?name=" + *name
 }

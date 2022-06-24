@@ -56,8 +56,11 @@ func start(h chat.Hub, upgrader websocket.Upgrader) func(w http.ResponseWriter, 
 
 		go c.Listen()
 		go c.Publish()
-		<-notifyExit
 
+		h.NotifyJoin(name)
+		<-notifyExit
 		h.Remove(&c)
+
+		h.NotifyDisconnect(name)
 	}
 }
