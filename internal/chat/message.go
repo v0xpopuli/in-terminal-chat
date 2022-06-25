@@ -1,9 +1,5 @@
 package chat
 
-import (
-	"time"
-)
-
 const (
 	joinChatMessage           = "*join the chat*"
 	disconnectFromChatMessage = "*disconnect from the chat*"
@@ -14,14 +10,14 @@ type Message struct {
 	UnixTimestamp int64
 }
 
-func BuildMessage(name, text string) Message {
-	return Message{Owner: name, Text: text, UnixTimestamp: time.Now().Unix()}
+func BuildMessage(name, text string, unixTimestamp int64) Message {
+	return Message{Owner: name, Text: text, UnixTimestamp: unixTimestamp}
 }
 
-func BuildJoinMessage(name string) Message {
-	return BuildMessage(name, joinChatMessage)
+func BuildJoinMessage(name string, unixTimestamp int64) Message {
+	return BuildMessage(name, joinChatMessage, unixTimestamp)
 }
 
-func BuildDisconnectMessage(name string) Message {
-	return BuildMessage(name, disconnectFromChatMessage)
+func BuildDisconnectMessage(name string, unixTimestamp int64) Message {
+	return BuildMessage(name, disconnectFromChatMessage, unixTimestamp)
 }

@@ -46,7 +46,7 @@ func writeMessage(c *websocket.Conn, name string) {
 			continue
 		}
 
-		if err := c.WriteJSON(chat.BuildMessage(name, message)); err != nil {
+		if err := c.WriteJSON(chat.BuildMessage(name, message, time.Now().Unix())); err != nil {
 			fmt.Printf("Failed to send message: %v\n", err)
 			break
 		}

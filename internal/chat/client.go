@@ -22,7 +22,13 @@ type (
 )
 
 func NewClient(name string, conn *websocket.Conn, notifyExit chan struct{}, broadcaster chan Message) Client {
-	return client{name: name, conn: conn, notifyExit: notifyExit, broadcaster: broadcaster, buffer: make(chan Message)}
+	return client{
+		name:        name,
+		conn:        conn,
+		notifyExit:  notifyExit,
+		broadcaster: broadcaster,
+		buffer:      make(chan Message),
+	}
 }
 
 func (c client) Publish() {
@@ -30,7 +36,7 @@ func (c client) Publish() {
 		var message Message
 		if err := c.conn.ReadJSON(&message); err != nil {
 			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
-				logrus.WithError(err).Error("Websocket unexpectedly closed")
+				logrus.WithField("name", c.name).WithError(err).Error("Websocket unexpectedly closed")
 			}
 			break
 		}
@@ -46,12 +52,12 @@ func (c client) Listen() {
 		case message, ok := <-c.buffer:
 			if !ok {
 				c.conn.WriteMessage(websocket.CloseMessage, []byte{})
-				logrus.Warn("Attempt to read from closed channel")
+				logrus.WithField("name", c.name).Warn("Attempt to read from closed channel")
 				return
 			}
 
 			if err := c.conn.WriteJSON(message); err != nil {
-				logrus.WithError(err).Error("Error occurred during attempt to send message")
+				logrus.WithField("name", c.name).WithError(err).Error("Error occurred during attempt to send message")
 				return
 			}
 		}

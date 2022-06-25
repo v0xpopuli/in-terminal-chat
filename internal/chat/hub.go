@@ -1,6 +1,10 @@
 package chat
 
-import "github.com/sirupsen/logrus"
+import (
+	"time"
+
+	"github.com/sirupsen/logrus"
+)
 
 type (
 	Hub interface {
@@ -34,22 +38,25 @@ func (h hub) Run() {
 		select {
 		case c := <-h.add:
 			h.clients[c] = true
-			logrus.Debugf("Connection added: %+v", *c)
+			logrus.WithField("client", *c).Debug("Connection added")
 
 		case c := <-h.remove:
 			if _, ok := h.clients[c]; ok {
 				delete(h.clients, c)
 				close((*c).Buffer())
-				logrus.Debugf("Connection removed: %+v", *c)
+				logrus.WithField("client", *c).Debug("Connection removed")
 			}
 
 		case message := <-h.broadcast:
+			logrus.WithField("message", message).Debug("Message received")
 			for c := range h.clients {
 				select {
 				case (*c).Buffer() <- message:
+					logrus.WithField("client", *c).Debug("Message sent to client")
 				default:
 					close((*c).Buffer())
 					delete(h.clients, c)
+					logrus.WithField("client", *c).Debug("Connection removed during broadcast")
 				}
 			}
 		}
@@ -65,11 +72,11 @@ func (h hub) Remove(c *Client) {
 }
 
 func (h hub) NotifyJoin(name string) {
-	h.broadcast <- BuildJoinMessage(name)
+	h.broadcast <- BuildJoinMessage(name, time.Now().Unix())
 }
 
 func (h hub) NotifyDisconnect(name string) {
-	h.broadcast <- BuildDisconnectMessage(name)
+	h.broadcast <- BuildDisconnectMessage(name, time.Now().Unix())
 }
 
 func (h hub) GetBroadcastingChannel() chan Message {
