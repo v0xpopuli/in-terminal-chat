@@ -23,6 +23,7 @@ func TestServerTestSuite(t *testing.T) {
 }
 
 func (s *ServerTestSuite) SetupSuite() {
+	logrus.Info("Setup server suite!")
 	hub := chat.NewHub()
 	go hub.Run()
 
@@ -36,6 +37,7 @@ func (s *ServerTestSuite) SetupSuite() {
 }
 
 func (s *ServerTestSuite) TestServer() {
+	logrus.Info("Start server test!!!")
 	logrus.SetLevel(logrus.DebugLevel)
 
 	egor, wenjie := "Egor", "Wenjie"
@@ -62,6 +64,7 @@ func (s *ServerTestSuite) TestServer() {
 			}
 		}
 	}()
+	logrus.Info("Stuck before release...")
 	<-release
 
 	s.Equal(egor, actualMessages[0].Owner)

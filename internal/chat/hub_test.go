@@ -2,12 +2,15 @@ package chat
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/suite"
 )
 
 type HubTestSuite struct {
 	suite.Suite
+
+	ticker *time.Ticker
 
 	hub hub
 }
@@ -21,10 +24,19 @@ func (s *HubTestSuite) SetupSuite() {
 	go s.hub.Run()
 }
 
+func (s *HubTestSuite) SetupTest() {
+	s.ticker = time.NewTicker(3 * time.Second)
+}
+
+func (s *HubTestSuite) TearDownSuite() {
+	s.ticker.Stop()
+}
+
 func (s *HubTestSuite) TestAdd() {
 	c := NewClient("Tony Stark", nil, nil, nil)
 	s.hub.Add(&c)
 
+	<-s.ticker.C
 	s.True(s.hub.clients[&c])
 }
 
@@ -36,6 +48,7 @@ func (s *HubTestSuite) TestRemove() {
 
 	s.hub.Remove(&c)
 
+	<-s.ticker.C
 	_, actual := s.hub.clients[&c]
 	s.False(actual)
 }
@@ -50,6 +63,7 @@ func (s *HubTestSuite) TestBroadcast() {
 		s.Equal(expected, <-c.Buffer())
 	}()
 
+	<-s.ticker.C
 	message := BuildMessage("Captain America", "Avengers assemble", 0)
 	s.hub.GetBroadcastingChannel() <- message
 }
@@ -66,6 +80,7 @@ func (s *HubTestSuite) TestNotifyJoin() {
 		s.Equal(expected.Text, actual.Text)
 	}()
 
+	<-s.ticker.C
 	s.hub.NotifyJoin("Captain America")
 }
 
@@ -81,6 +96,7 @@ func (s *HubTestSuite) TestNotifyDisconnect() {
 		s.Equal(expected.Text, actual.Text)
 	}()
 
+	<-s.ticker.C
 	s.hub.NotifyDisconnect("Captain America")
 }
 
