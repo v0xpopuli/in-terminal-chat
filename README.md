@@ -1,5 +1,5 @@
 # in-terminal-chat
-![Coverage](https://img.shields.io/badge/Coverage-67.6%25-yellow)
+![Coverage](https://img.shields.io/badge/Coverage-90.9%25-brightgreen)
 
 <p>Simple chat that works in terminal. <br/>
 Just small project for keeping skills sharp and learn something new. <br/><p>
