@@ -4,7 +4,6 @@ import (
 	"in-terminal-chat/internal/chat"
 	"strconv"
 	"testing"
-	"time"
 
 	"github.com/gorilla/websocket"
 	"github.com/phayes/freeport"
@@ -35,24 +34,17 @@ func (s *ServerTestSuite) SetupSuite() {
 	go New(s.address, hub).Run()
 }
 
-func (s *ServerTestSuite) TestFlow() {
+func (s *ServerTestSuite) TestServer() {
 	egor, wenjie := "Egor", "Wenjie"
-	hiThere, byeBye := "Hi there!", "Bye bye!"
-
-	expectedMessages := []chat.Message{
-		{Owner: egor, Text: "*join the chat*"},
-		{Owner: wenjie, Text: "*join the chat*"},
-		{Owner: egor, Text: hiThere},
-		{Owner: wenjie, Text: byeBye},
-		{Owner: wenjie, Text: "*disconnect from the chat*"},
-	}
+	joinTheChatMessage := "*join the chat*"
 
 	connOne, _, err := websocket.DefaultDialer.Dial(s.fullULR+egor, nil)
 	s.NoError(err)
 
-	connTwo, _, err := websocket.DefaultDialer.Dial(s.fullULR+wenjie, nil)
+	_, _, err = websocket.DefaultDialer.Dial(s.fullULR+wenjie, nil)
 	s.NoError(err)
 
+	release := make(chan struct{})
 	actualMessages := make([]chat.Message, 0)
 	go func() {
 		for {
@@ -61,22 +53,19 @@ func (s *ServerTestSuite) TestFlow() {
 				break
 			}
 			actualMessages = append(actualMessages, m)
+			if len(actualMessages) == 2 {
+				release <- struct{}{}
+			}
 		}
 	}()
+	<-release
 
-	s.NoError(connOne.WriteJSON(chat.Message{Owner: egor, Text: hiThere}))
+	s.Equal(egor, actualMessages[0].Owner)
+	s.Equal(joinTheChatMessage, actualMessages[0].Text)
+	s.NotEmpty(actualMessages[0].UnixTimestamp)
 
-	time.Sleep(2 * time.Second)
-	s.NoError(connTwo.WriteJSON(chat.Message{Owner: wenjie, Text: byeBye}))
+	s.Equal(wenjie, actualMessages[1].Owner)
+	s.Equal(joinTheChatMessage, actualMessages[1].Text)
+	s.NotEmpty(actualMessages[1].UnixTimestamp)
 
-	time.Sleep(2 * time.Second)
-	s.Len(actualMessages, 4)
-	s.Equal(expectedMessages[0].Owner, actualMessages[0].Owner)
-	s.Equal(expectedMessages[0].Text, actualMessages[0].Text)
-	s.Equal(expectedMessages[1].Owner, actualMessages[1].Owner)
-	s.Equal(expectedMessages[1].Text, actualMessages[1].Text)
-	s.Equal(expectedMessages[2].Owner, actualMessages[2].Owner)
-	s.Equal(expectedMessages[2].Text, actualMessages[2].Text)
-	s.Equal(expectedMessages[3].Owner, actualMessages[3].Owner)
-	s.Equal(expectedMessages[3].Text, actualMessages[3].Text)
 }

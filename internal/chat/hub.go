@@ -54,9 +54,6 @@ func (h hub) Run() {
 				case (*c).Buffer() <- message:
 					logrus.WithField("client", *c).Debug("Message sent to client")
 				default:
-					close((*c).Buffer())
-					delete(h.clients, c)
-					logrus.WithField("client", *c).Debug("Connection removed during broadcast")
 				}
 			}
 		}
