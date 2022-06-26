@@ -7,6 +7,7 @@ import (
 
 	"github.com/gorilla/websocket"
 	"github.com/phayes/freeport"
+	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -35,6 +36,8 @@ func (s *ServerTestSuite) SetupSuite() {
 }
 
 func (s *ServerTestSuite) TestServer() {
+	logrus.SetLevel(logrus.DebugLevel)
+
 	egor, wenjie := "Egor", "Wenjie"
 	joinTheChatMessage := "*join the chat*"
 
@@ -50,6 +53,7 @@ func (s *ServerTestSuite) TestServer() {
 		for {
 			var m chat.Message
 			if err := connOne.ReadJSON(&m); err != nil {
+				release <- struct{}{}
 				break
 			}
 			actualMessages = append(actualMessages, m)
