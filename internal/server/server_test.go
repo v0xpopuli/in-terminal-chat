@@ -4,6 +4,7 @@ import (
 	"in-terminal-chat/internal/chat"
 	"strconv"
 	"testing"
+	"time"
 
 	"github.com/gorilla/websocket"
 	"github.com/phayes/freeport"
@@ -23,7 +24,8 @@ func TestServerTestSuite(t *testing.T) {
 }
 
 func (s *ServerTestSuite) SetupSuite() {
-	logrus.Info("Setup server suite!")
+	logrus.SetLevel(logrus.DebugLevel)
+
 	hub := chat.NewHub()
 	go hub.Run()
 
@@ -37,35 +39,27 @@ func (s *ServerTestSuite) SetupSuite() {
 }
 
 func (s *ServerTestSuite) TestServer() {
-	logrus.Info("Start server test!!!")
-	logrus.SetLevel(logrus.DebugLevel)
-
 	egor, wenjie := "Egor", "Wenjie"
 	joinTheChatMessage := "*join the chat*"
 
 	connOne, _, err := websocket.DefaultDialer.Dial(s.fullULR+egor, nil)
 	s.NoError(err)
 
+	time.Sleep(5 * time.Second)
 	_, _, err = websocket.DefaultDialer.Dial(s.fullULR+wenjie, nil)
 	s.NoError(err)
 
-	release := make(chan struct{})
 	actualMessages := make([]chat.Message, 0)
 	go func() {
 		for {
 			var m chat.Message
 			if err := connOne.ReadJSON(&m); err != nil {
-				release <- struct{}{}
 				break
 			}
 			actualMessages = append(actualMessages, m)
-			if len(actualMessages) == 2 {
-				release <- struct{}{}
-			}
 		}
 	}()
-	logrus.Info("Stuck before release...")
-	<-release
+	time.Sleep(5 * time.Second)
 
 	s.Equal(egor, actualMessages[0].Owner)
 	s.Equal(joinTheChatMessage, actualMessages[0].Text)
