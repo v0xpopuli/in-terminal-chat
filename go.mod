@@ -4,6 +4,7 @@ go 1.18
 
 require (
 	github.com/TwiN/go-color v1.1.0
+	github.com/golang/mock v1.6.0
 	github.com/gorilla/mux v1.8.0
 	github.com/gorilla/websocket v1.5.0
 	github.com/gosuri/uilive v0.0.4

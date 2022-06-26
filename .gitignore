@@ -1,3 +1,4 @@
 /in-terminal-chat.iml
 /.idea/
 /build/*.exe
+/internal/chat/*_mock.go

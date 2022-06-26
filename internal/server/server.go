@@ -40,7 +40,7 @@ func (s server) Run() {
 
 func start(h chat.Hub, upgrader websocket.Upgrader) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		conn, err := upgrader.Upgrade(w, r, nil)
+		wsConn, err := upgrader.Upgrade(w, r, nil)
 		if err != nil {
 			logrus.WithError(err).Error("Failed to upgrade connection to the WebSocket protocol")
 			return
@@ -51,15 +51,16 @@ func start(h chat.Hub, upgrader websocket.Upgrader) func(w http.ResponseWriter, 
 		notifyExit := make(chan struct{})
 		broadcaster := h.GetBroadcastingChannel()
 
-		c := chat.NewClient(name, conn, notifyExit, broadcaster)
-		h.Add(&c)
+		conn := chat.NewConnection(wsConn)
+		client := chat.NewClient(name, conn, notifyExit, broadcaster)
+		h.Add(&client)
 
-		go c.Listen()
-		go c.Publish()
+		go client.Listen()
+		go client.Publish()
 
 		h.NotifyJoin(name)
 		<-notifyExit
-		h.Remove(&c)
+		h.Remove(&client)
 
 		h.NotifyDisconnect(name)
 	}

@@ -15,13 +15,13 @@ type (
 
 	client struct {
 		name                string
-		conn                *websocket.Conn
+		conn                Connection
 		buffer, broadcaster chan Message
 		notifyExit          chan struct{}
 	}
 )
 
-func NewClient(name string, conn *websocket.Conn, notifyExit chan struct{}, broadcaster chan Message) Client {
+func NewClient(name string, conn Connection, notifyExit chan struct{}, broadcaster chan Message) Client {
 	return client{
 		name:        name,
 		conn:        conn,
@@ -33,8 +33,8 @@ func NewClient(name string, conn *websocket.Conn, notifyExit chan struct{}, broa
 
 func (c client) Publish() {
 	for {
-		var message Message
-		if err := c.conn.ReadJSON(&message); err != nil {
+		message, err := c.conn.ReadJSONMessage()
+		if err != nil {
 			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
 				logrus.WithField("name", c.name).WithError(err).Error("Websocket unexpectedly closed")
 			}
@@ -51,12 +51,12 @@ func (c client) Listen() {
 		select {
 		case message, ok := <-c.buffer:
 			if !ok {
-				c.conn.WriteMessage(websocket.CloseMessage, []byte{})
+				c.conn.WriteCloseMessage()
 				logrus.WithField("name", c.name).Warn("Attempt to read from closed channel")
 				return
 			}
 
-			if err := c.conn.WriteJSON(message); err != nil {
+			if err := c.conn.WriteJSONMessage(message); err != nil {
 				logrus.WithField("name", c.name).WithError(err).Error("Error occurred during attempt to send message")
 				return
 			}

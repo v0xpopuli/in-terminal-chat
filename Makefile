@@ -1,4 +1,8 @@
-tests:
+genmocks:
+	go install github.com/golang/mock/mockgen@latest
+	go generate ./...
+
+tests: genmocks
 	go test ./...
 
 build-server-for-windows:
