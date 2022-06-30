@@ -10,7 +10,9 @@ type (
 		Publish()
 		Listen()
 
+		Name() string
 		Buffer() chan Message
+		CloseConnectionWithMessage(Message)
 	}
 
 	client struct {
@@ -65,6 +67,15 @@ func (c client) Listen() {
 	c.conn.Close()
 }
 
+func (c client) Name() string {
+	return c.name
+}
+
 func (c client) Buffer() chan Message {
 	return c.buffer
+}
+
+func (c client) CloseConnectionWithMessage(m Message) {
+	c.conn.WriteJSONMessage(m)
+	c.conn.WriteCloseMessage()
 }

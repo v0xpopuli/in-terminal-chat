@@ -47,6 +47,9 @@ func writeMessage(c *websocket.Conn, name string) {
 		}
 
 		if err := c.WriteJSON(chat.BuildMessage(name, message, time.Now().Unix())); err != nil {
+			if err == websocket.ErrCloseSent {
+				break
+			}
 			fmt.Printf("Failed to send message: %v\n", err)
 			break
 		}
@@ -61,7 +64,11 @@ func readMessages(c *websocket.Conn, name string) {
 	for {
 		var message chat.Message
 		if err := c.ReadJSON(&message); err != nil {
+			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
+				break
+			}
 			fmt.Printf("Failed to read message: %v\n", err)
+			break
 		}
 
 		if message.Owner == name {

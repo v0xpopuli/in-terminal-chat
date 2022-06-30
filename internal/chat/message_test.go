@@ -34,14 +34,21 @@ func (s *MessageTestSuite) TestBuildMessage() {
 
 func (s *MessageTestSuite) TestBuildJoinMessage() {
 	expected := Message{Owner: s.name, Text: joinChatMessage, UnixTimestamp: s.unixTimestamp}
-	actual := BuildMessage(s.name, joinChatMessage, s.unixTimestamp)
+	actual := BuildJoinMessage(s.name, s.unixTimestamp)
 
 	s.Equal(expected, actual)
 }
 
 func (s *MessageTestSuite) TestBuildDisconnectMessage() {
 	expected := Message{Owner: s.name, Text: disconnectFromChatMessage, UnixTimestamp: s.unixTimestamp}
-	actual := BuildMessage(s.name, disconnectFromChatMessage, s.unixTimestamp)
+	actual := BuildDisconnectMessage(s.name, s.unixTimestamp)
+
+	s.Equal(expected, actual)
+}
+
+func (s *MessageTestSuite) TestBuildNameExistsMessage() {
+	expected := Message{Owner: s.name, Text: nameExistsMessage, UnixTimestamp: s.unixTimestamp}
+	actual := BuildNameExistsMessage(s.name, s.unixTimestamp)
 
 	s.Equal(expected, actual)
 }

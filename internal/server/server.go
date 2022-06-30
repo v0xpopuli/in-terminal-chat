@@ -3,6 +3,7 @@ package server
 import (
 	"in-terminal-chat/internal/chat"
 	"net/http"
+	"time"
 
 	"github.com/gorilla/mux"
 	"github.com/gorilla/websocket"
@@ -38,7 +39,7 @@ func (s server) Run() {
 	logrus.Fatal(http.ListenAndServe(s.address, s.router))
 }
 
-func start(h chat.Hub, upgrader websocket.Upgrader) func(w http.ResponseWriter, r *http.Request) {
+func start(hub chat.Hub, upgrader websocket.Upgrader) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		wsConn, err := upgrader.Upgrade(w, r, nil)
 		if err != nil {
@@ -49,19 +50,24 @@ func start(h chat.Hub, upgrader websocket.Upgrader) func(w http.ResponseWriter, 
 		name := r.URL.Query().Get("name")
 
 		notifyExit := make(chan struct{})
-		broadcaster := h.GetBroadcastingChannel()
+		broadcaster := hub.GetBroadcastingChannel()
 
 		conn := chat.NewConnection(wsConn)
 		client := chat.NewClient(name, conn, notifyExit, broadcaster)
-		h.Add(&client)
+		if hub.NameExists(name) {
+			client.CloseConnectionWithMessage(chat.BuildNameExistsMessage(name, time.Now().Unix()))
+			logrus.WithField("client", client).Debug("Name exists in current session, close connection")
+			return
+		}
+		hub.Add(&client)
 
 		go client.Listen()
 		go client.Publish()
 
-		h.NotifyJoin(name)
+		hub.NotifyJoin(name)
 		<-notifyExit
-		h.Remove(&client)
+		hub.Remove(&client)
 
-		h.NotifyDisconnect(name)
+		hub.NotifyDisconnect(name)
 	}
 }

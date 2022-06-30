@@ -110,3 +110,16 @@ func (s *ClientTestSuite) TestListen_Error() {
 
 	s.client.Buffer() <- message
 }
+
+func (s *ClientTestSuite) TestName() {
+	s.Equal(s.name, s.client.Name())
+}
+
+func (s *ClientTestSuite) TestCloseConnectionWithMessage() {
+	m := BuildNameExistsMessage(s.name, 0)
+
+	s.conn.EXPECT().WriteJSONMessage(m)
+	s.conn.EXPECT().WriteCloseMessage()
+
+	s.client.CloseConnectionWithMessage(m)
+}

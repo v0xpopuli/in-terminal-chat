@@ -37,19 +37,19 @@ func (s *HubTestSuite) TestAdd() {
 	s.hub.Add(&c)
 
 	<-s.ticker.C
-	s.True(s.hub.clients[&c])
+	s.Equal(s.hub.clients[c.Name()], &c)
 }
 
 func (s *HubTestSuite) TestRemove() {
 	c := NewClient("Thor Odinson", nil, nil, nil)
-	s.hub.clients[&c] = true
+	s.hub.clients[c.Name()] = &c
 
-	s.True(s.hub.clients[&c])
+	s.Equal(s.hub.clients[c.Name()], &c)
 
 	s.hub.Remove(&c)
 
 	<-s.ticker.C
-	_, actual := s.hub.clients[&c]
+	_, actual := s.hub.clients[c.Name()]
 	s.False(actual)
 }
 
@@ -102,4 +102,13 @@ func (s *HubTestSuite) TestNotifyDisconnect() {
 
 func (s *HubTestSuite) TestGetBroadcastingChannel() {
 	s.NotNil(s.hub.GetBroadcastingChannel())
+}
+
+func (s *HubTestSuite) TestNameExists() {
+	name := "Black Widow"
+	c := NewClient(name, nil, nil, nil)
+
+	s.hub.clients[name] = &c
+
+	s.True(s.hub.NameExists(name))
 }
