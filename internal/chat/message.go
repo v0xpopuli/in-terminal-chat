@@ -1,8 +1,8 @@
 package chat
 
 const (
-	joinChatMessage           = "*join the chat*"
-	disconnectFromChatMessage = "*disconnect from the chat*"
+	messageJoined       = "*joined the chat*"
+	messageDisconnected = "*disconnected from the chat*"
 )
 
 type Message struct {
@@ -15,9 +15,9 @@ func BuildMessage(name, text string, unixTimestamp int64) Message {
 }
 
 func BuildJoinMessage(name string, unixTimestamp int64) Message {
-	return BuildMessage(name, joinChatMessage, unixTimestamp)
+	return BuildMessage(name, messageJoined, unixTimestamp)
 }
 
 func BuildDisconnectMessage(name string, unixTimestamp int64) Message {
-	return BuildMessage(name, disconnectFromChatMessage, unixTimestamp)
+	return BuildMessage(name, messageDisconnected, unixTimestamp)
 }

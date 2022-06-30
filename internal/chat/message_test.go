@@ -33,15 +33,15 @@ func (s *MessageTestSuite) TestBuildMessage() {
 }
 
 func (s *MessageTestSuite) TestBuildJoinMessage() {
-	expected := Message{Owner: s.name, Text: joinChatMessage, UnixTimestamp: s.unixTimestamp}
-	actual := BuildMessage(s.name, joinChatMessage, s.unixTimestamp)
+	expected := Message{Owner: s.name, Text: messageJoined, UnixTimestamp: s.unixTimestamp}
+	actual := BuildMessage(s.name, messageJoined, s.unixTimestamp)
 
 	s.Equal(expected, actual)
 }
 
 func (s *MessageTestSuite) TestBuildDisconnectMessage() {
-	expected := Message{Owner: s.name, Text: disconnectFromChatMessage, UnixTimestamp: s.unixTimestamp}
-	actual := BuildMessage(s.name, disconnectFromChatMessage, s.unixTimestamp)
+	expected := Message{Owner: s.name, Text: messageDisconnected, UnixTimestamp: s.unixTimestamp}
+	actual := BuildMessage(s.name, messageDisconnected, s.unixTimestamp)
 
 	s.Equal(expected, actual)
 }

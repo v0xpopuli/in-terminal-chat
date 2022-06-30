@@ -4,17 +4,18 @@ import (
 	"bufio"
 	"flag"
 	"fmt"
-	"in-terminal-chat/internal/chat"
 	"os"
 	"strings"
 	"time"
+
+	"in-terminal-chat/internal/chat"
 
 	"github.com/TwiN/go-color"
 	"github.com/gorilla/websocket"
 	"github.com/gosuri/uilive"
 )
 
-const messagePattern = "[%s] %s -> %s"
+const messageFmt = "[%s] %s -> %s"
 
 func main() {
 	address := flag.String("address", "ws://localhost:8080", "http service address")
@@ -46,7 +47,7 @@ func writeMessage(c *websocket.Conn, name string) {
 			continue
 		}
 
-		if err := c.WriteJSON(chat.BuildMessage(name, message, time.Now().Unix())); err != nil {
+		if err := c.WriteJSON(chat.Message{Owner: name, Text: message}); err != nil {
 			fmt.Printf("Failed to send message: %v\n", err)
 			break
 		}
@@ -73,7 +74,7 @@ func readMessages(c *websocket.Conn, name string) {
 }
 
 func assembleMessage(m chat.Message) string {
-	return fmt.Sprintf(messagePattern, time.Unix(m.UnixTimestamp, 0), m.Owner, m.Text)
+	return fmt.Sprintf(messageFmt, time.Unix(m.UnixTimestamp, 0), m.Owner, m.Text)
 }
 
 func makeDialURL(address *string, name *string) string {

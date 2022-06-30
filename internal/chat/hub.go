@@ -48,6 +48,7 @@ func (h hub) Run() {
 			}
 
 		case message := <-h.broadcast:
+			message.UnixTimestamp = time.Now().Unix()
 			logrus.WithField("message", message).Debug("Message received")
 			for c := range h.clients {
 				select {
