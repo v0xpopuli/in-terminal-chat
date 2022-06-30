@@ -15,6 +15,8 @@ import (
 type ServerTestSuite struct {
 	suite.Suite
 
+	hub chat.Hub
+
 	address string
 	fullULR string
 }
@@ -26,8 +28,8 @@ func TestServerTestSuite(t *testing.T) {
 func (s *ServerTestSuite) SetupSuite() {
 	logrus.SetLevel(logrus.DebugLevel)
 
-	hub := chat.NewHub()
-	go hub.Run()
+	s.hub = chat.NewHub()
+	go s.hub.Run()
 
 	availablePort, err := freeport.GetFreePort()
 	s.NoError(err)
@@ -35,30 +37,24 @@ func (s *ServerTestSuite) SetupSuite() {
 	s.address = "localhost:" + strconv.Itoa(availablePort)
 	s.fullULR = "ws://" + s.address + "/start?name="
 
-	go New(s.address, hub).Run()
+	go New(s.address, s.hub).Run()
 }
 
 func (s *ServerTestSuite) TestServer() {
+	var m chat.Message
 	egor, wenjie := "Egor", "Wenjie"
 
-	connOne, _, err := websocket.DefaultDialer.Dial(s.fullULR+egor, nil)
+	conn, _, err := websocket.DefaultDialer.Dial(s.fullULR+egor, nil)
 	s.NoError(err)
 
 	time.Sleep(2 * time.Second)
+	conn.ReadJSON(&m)
+	s.Equal(egor, m.Owner)
+
 	_, _, err = websocket.DefaultDialer.Dial(s.fullULR+wenjie, nil)
 	s.NoError(err)
 
-	actualMessages := make([]chat.Message, 0)
-	go func() {
-		for {
-			var m chat.Message
-			if err := connOne.ReadJSON(&m); err != nil {
-				break
-			}
-			actualMessages = append(actualMessages, m)
-		}
-	}()
 	time.Sleep(2 * time.Second)
-
-	s.Len(actualMessages, 2)
+	conn.ReadJSON(&m)
+	s.Equal(wenjie, m.Owner)
 }
