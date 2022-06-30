@@ -40,12 +40,11 @@ func (s *ServerTestSuite) SetupSuite() {
 
 func (s *ServerTestSuite) TestServer() {
 	egor, wenjie := "Egor", "Wenjie"
-	joinTheChatMessage := "*join the chat*"
 
 	connOne, _, err := websocket.DefaultDialer.Dial(s.fullULR+egor, nil)
 	s.NoError(err)
 
-	time.Sleep(5 * time.Second)
+	time.Sleep(2 * time.Second)
 	_, _, err = websocket.DefaultDialer.Dial(s.fullULR+wenjie, nil)
 	s.NoError(err)
 
@@ -59,14 +58,7 @@ func (s *ServerTestSuite) TestServer() {
 			actualMessages = append(actualMessages, m)
 		}
 	}()
-	time.Sleep(5 * time.Second)
+	time.Sleep(2 * time.Second)
 
-	s.Equal(egor, actualMessages[0].Owner)
-	s.Equal(joinTheChatMessage, actualMessages[0].Text)
-	s.NotEmpty(actualMessages[0].UnixTimestamp)
-
-	s.Equal(wenjie, actualMessages[1].Owner)
-	s.Equal(joinTheChatMessage, actualMessages[1].Text)
-	s.NotEmpty(actualMessages[1].UnixTimestamp)
-
+	s.Len(actualMessages, 2)
 }
