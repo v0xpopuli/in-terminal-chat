@@ -1,4 +1,5 @@
 # in-terminal-chat
+[![.github/workflows/tests.yml](https://github.com/v0xpopuli/in-terminal-chat/actions/workflows/tests.yml/badge.svg?branch=development)](https://github.com/v0xpopuli/in-terminal-chat/actions/workflows/tests.yml)
 ![Coverage](https://img.shields.io/badge/Coverage-90.9%25-brightgreen)
 
 <p>Simple chat that works in terminal. <br/>
